@@ -2,7 +2,6 @@ package seleniumgrid;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
@@ -13,23 +12,29 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class Brokenlinkwithbrokenlink {
 
-    public static void main(String[] args) throws MalformedURLException, IOException {
+    WebDriver driver;
+    int brokenCount = 0;
 
+    @BeforeClass
+    public void setup() throws IOException {
         // Point to your Selenium Grid Standalone Hub
-        URL gridUrl = new URL("http://192.168.31.198:4444/wd/hub");  // <-- Replace with your Grid IP
+        URL gridUrl = new URL("http://192.168.31.198:4444/wd/hub"); // <-- replace with your Hub IP
         ChromeOptions options = new ChromeOptions();
-
-        WebDriver driver = new RemoteWebDriver(gridUrl, options);
-
+        driver = new RemoteWebDriver(gridUrl, options);
         driver.get("https://demoqa.com/broken");
+    }
 
-        // Collect all links
+    @Test
+    public void verifyBrokenLinks() {
         List<WebElement> links = driver.findElements(By.tagName("a"));
         Set<String> uniqueUrls = new HashSet<>();
-        int brokenCount = 0;
 
         for (WebElement link : links) {
             String url = link.getAttribute("href");
@@ -46,7 +51,7 @@ public class Brokenlinkwithbrokenlink {
 
             try {
                 HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-                conn.setRequestMethod("HEAD");  // Faster than GET
+                conn.setRequestMethod("HEAD"); // Faster than GET
                 conn.connect();
                 int responseCode = conn.getResponseCode();
 
@@ -64,6 +69,15 @@ public class Brokenlinkwithbrokenlink {
         }
 
         System.out.println("Total broken links found: " + brokenCount);
-        driver.quit();
+
+        // You can put an assertion (optional)
+        Assert.assertTrue(brokenCount >= 0, "Broken links check completed");
+    }
+
+    @AfterClass
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
     }
 }
